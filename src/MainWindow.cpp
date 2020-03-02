@@ -343,6 +343,8 @@ void MainWindow::init()
     });
     ui->tabSqlAreas->setCornerWidget(buttonCloseSqlTab);
 
+    //QIcon execIcon(":icons/hourglass");
+    ui->tabSqlAreas->setMinimumSize(ui->tabSqlAreas->iconSize());
     // If we're not compiling in SQLCipher, hide its FAQ link in the help menu
 #ifndef ENABLE_SQLCIPHER
     ui->actionSqlCipherFaq->setVisible(false);
@@ -1082,7 +1084,7 @@ void MainWindow::executeQuery()
         int execute_from_line, execute_from_index;
         editor->lineIndexFromPosition(from_position, &execute_from_line, &execute_from_index);
 
-        // Special case: if the start position is at the end of a line, then move to the beggining of next line.
+        // Special case: if the start position is at the end of a line, then move to the beginning of next line.
         // Otherwise for the typical case, the line reference is one less than expected.
         // Note that execute_from_index uses character positions and not byte positions, so at() can be used.
         QChar char_at_index = editor->text(execute_from_line).at(execute_from_index);
@@ -1181,7 +1183,12 @@ void MainWindow::executeQuery()
     }, Qt::BlockingQueuedConnection);
     connect(execute_sql_worker.get(), &RunSql::finished, sqlWidget, [this, current_tab, sqlWidget]() {
         // We work with a pointer to the current tab here instead of its index because the user might reorder the tabs in the meantime
-        ui->tabSqlAreas->setTabIcon(ui->tabSqlAreas->indexOf(current_tab), QIcon());
+        if(sqlWidget->fileName().isEmpty())
+            ui->tabSqlAreas->setTabIcon(ui->tabSqlAreas->indexOf(current_tab), QIcon(":/icons/tab"));
+        else
+            ui->tabSqlAreas->setTabIcon(ui->tabSqlAreas->indexOf(current_tab), QIcon(":/icons/document_open"));
+
+        ui->tabSqlAreas->tabBar()->setTabData(ui->tabSqlAreas->indexOf(current_tab), QVariant(false));
 
         // We don't need to check for the current SQL tab here because two concurrently running queries are not allowed
         ui->actionSqlExecuteLine->setEnabled(true);
@@ -1200,6 +1207,7 @@ void MainWindow::executeQuery()
     // NOTE It's a bit hack-ish but we don't use this icon just as a signal to the user but also check for it in various places to check whether a
     // specific SQL tab is currently running a query or not.
     ui->tabSqlAreas->setTabIcon(ui->tabSqlAreas->currentIndex(), QIcon(":icons/hourglass"));
+    ui->tabSqlAreas->tabBar()->setTabData(ui->tabSqlAreas->currentIndex(), QVariant(true));
 
     // Deactivate the buttons to start a query and activate the button to stop the query
     ui->actionSqlExecuteLine->setEnabled(false);
@@ -1871,7 +1879,7 @@ bool MainWindow::askSaveSqlTab(int index, bool& ignoreUnattachedBuffers)
 void MainWindow::closeSqlTab(int index, bool force)
 {
     // Check if we're still executing statements from this tab and stop them before proceeding
-    if(!ui->tabSqlAreas->tabIcon(index).isNull())
+    if(ui->tabSqlAreas->tabBar()->tabData(index).toBool())
     {
         if(QMessageBox::warning(this, qApp->applicationName(), tr("The statements in this tab are still executing. Closing the tab will stop the "
                                                                   "execution. This might leave the database in an inconsistent state. Are you sure "
@@ -1923,6 +1931,8 @@ int MainWindow::openSqlTab(bool resetCounter)
     // Connect now the find shortcut to the editor with widget context, so it isn't ambiguous with other Scintilla Widgets.
     QShortcut* shortcutFind = new QShortcut(ui->actionSqlFind->shortcut(), w->getEditor(), nullptr, nullptr, Qt::WidgetShortcut);
     connect(shortcutFind, &QShortcut::activated, ui->actionSqlFind, &QAction::toggle);
+    ui->tabSqlAreas->setTabIcon(index, QIcon(":icons/tab"));
+    ui->tabSqlAreas->tabBar()->setTabData(index, false);
 
     return index;
 }
@@ -1934,7 +1944,7 @@ void MainWindow::changeSqlTab(int index)
     ui->actionSqlResultsSave->setEnabled(false);
 
     // Check if the new tab is currently running a query or not
-    if(ui->tabSqlAreas->tabIcon(index).isNull())
+    if(!ui->tabSqlAreas->tabBar()->tabData(index).toBool())
     {
         // Not running a query
 
@@ -1973,6 +1983,8 @@ void MainWindow::openSqlFile()
 
         QFileInfo fileinfo(file);
         ui->tabSqlAreas->setTabText(index, fileinfo.fileName());
+        ui->tabSqlAreas->setTabIcon(index, QIcon(":/icons/document_open"));
+
     }
 }
 
@@ -2018,6 +2030,7 @@ void MainWindow::saveSqlFileAs()
 
         QFileInfo fileinfo(file);
         ui->tabSqlAreas->setTabText(ui->tabSqlAreas->currentIndex(), fileinfo.fileName());
+        ui->tabSqlAreas->setTabIcon(ui->tabSqlAreas->currentIndex(), QIcon(":/icons/document_open"));
     }
 }
 
