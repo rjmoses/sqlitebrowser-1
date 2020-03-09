@@ -32,6 +32,7 @@ struct BrowseDataTableSettings
     CondFormatMap condFormats;
     CondFormatMap rowIdFormats;
     QMap<int, QString> displayFormats;
+    QMap<int, bool> displayFormatsSortByText;   // RJM
     bool showRowid;
     QString encoding;
     QString plotXAxis;

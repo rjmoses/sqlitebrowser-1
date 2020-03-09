@@ -97,10 +97,15 @@ std::string Query::buildQuery(bool withRowid) const
     } else {
         for(const auto& it : m_selected_columns)
         {
-            if (it.original_column != it.selector)
-                selector += it.selector + " AS " + sqlb::escapeIdentifier(it.original_column) + ",";
-            else
+            if (it.original_column != it.selector) {     // RJM If the display format is not default...
+                if (it.sortByText) {
+                    selector += it.selector + " AS " + sqlb::escapeIdentifier(it.original_column) + ",";
+                } else {
+                    selector += it.selector + " AS " + sqlb::escapeIdentifier(it.original_column + "()") + ",";
+                }
+            } else {
                 selector += sqlb::escapeIdentifier(it.original_column) + ",";
+            }
         }
         selector.pop_back();
     }

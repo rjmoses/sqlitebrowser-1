@@ -34,13 +34,15 @@ struct SortedColumn
 
 struct SelectedColumn
 {
-    SelectedColumn(const std::string& original_column_, const std::string& selector_) :
+    SelectedColumn(const std::string& original_column_, const std::string& selector_, const bool sortByText_) : // RJM
         original_column(original_column_),
-        selector(selector_)
+        selector(selector_),
+        sortByText(sortByText_) // RJM
     {}
 
     std::string original_column;
     std::string selector;
+    bool sortByText;  // RJM
 };
 
 class Query

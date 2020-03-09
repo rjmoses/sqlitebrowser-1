@@ -93,11 +93,6 @@ TableBrowser::TableBrowser(QWidget* parent) :
         updateTable();
     });
 
-    // This is a workaround needed for QDarkStyleSheet.
-    // See https://github.com/ColinDuquesnoy/QDarkStyleSheet/issues/169
-    QStyledItemDelegate* styledItemDelegate = new QStyledItemDelegate(ui->comboBrowseTable);
-    ui->comboBrowseTable->setItemDelegate(styledItemDelegate);
-
     // Add the documentation of shortcuts, which aren't otherwise visible in the user interface, to some buttons.
     addShortcutsTooltip(ui->actionRefresh, {QKeySequence(tr("Ctrl+R"))});
     addShortcutsTooltip(ui->actionPrintTable);
@@ -338,7 +333,8 @@ void TableBrowser::init(DBBrowserDB* _db)
 void TableBrowser::reset()
 {
     // Reset the model
-    m_model->reset();
+    if(m_model)  // RJM
+        m_model->reset();
 
     // Remove all stored table information browse data tab
     m_settings.clear();
@@ -508,7 +504,8 @@ void TableBrowser::updateTable()
 
         // Filters
         for(auto it=storedData.filterValues.constBegin();it!=storedData.filterValues.constEnd();++it)
-            query.where().insert({it.key(), CondFormat::filterToSqlCondition(it.value(), m_model->encoding())});
+            query.where().insert({it.key(), CondFormat::filterToSqlCondition(it.value(),
+                                  m_model->encoding())});
 
         // Global filter
         for(const auto& f : storedData.globalFilters)
@@ -522,12 +519,13 @@ void TableBrowser::updateTable()
             for(size_t i=0; i<tablefields.size(); ++i)
             {
                 QString format = storedData.displayFormats[static_cast<int>(i)+1];
+                bool sByText  = storedData.displayFormatsSortByText[static_cast<int>(i)+1];   // RJM
                 if(format.size())
                 {
-                    query.selectedColumns().emplace_back(tablefields.at(i).name, format.toStdString());
+                    query.selectedColumns().emplace_back(tablefields.at(i).name, format.toStdString(), sByText);  // RJM
                     only_defaults = false;
                 } else {
-                    query.selectedColumns().emplace_back(tablefields.at(i).name, tablefields.at(i).name);
+                    query.selectedColumns().emplace_back(tablefields.at(i).name, tablefields.at(i).name, true); // RJM
                 }
             }
         }
@@ -1329,17 +1327,23 @@ void TableBrowser::editDisplayFormat()
         field_name = QString::fromStdString(db->getObjectByName<sqlb::View>(current_table)->fieldNames().at(static_cast<size_t>(field_number)-1));
     // Get the current display format of the field
     QString current_displayformat = m_settings[current_table].displayFormats[field_number];
+    bool sortByText = m_settings[current_table].displayFormatsSortByText[field_number];
 
     // Open the dialog
-    ColumnDisplayFormatDialog dialog(*db, current_table, field_name, current_displayformat, this);
+    ColumnDisplayFormatDialog dialog(*db, current_table, field_name, current_displayformat,
+                                     sortByText, this);     // RJM
     if(dialog.exec())
     {
         // Set the newly selected display format
         QString new_format = dialog.selectedDisplayFormat();
-        if(new_format.size())
+        bool checkBox = dialog.selectedDisplayFormatSortByText();  // RJM
+        if(new_format.size()) {
             m_settings[current_table].displayFormats[field_number] = new_format;
-        else
+            m_settings[current_table].displayFormatsSortByText[field_number] = checkBox;    // RJM
+        } else {
             m_settings[current_table].displayFormats.remove(field_number);
+            m_settings[current_table].displayFormatsSortByText.remove(field_number);        // RJM
+        }
         emit projectModified();
 
         // Refresh view

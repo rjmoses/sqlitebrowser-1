@@ -2333,7 +2333,12 @@ static void loadBrowseDataTableSettings(BrowseDataTableSettings& settings, QXmlS
             while(xml.readNext() != QXmlStreamReader::EndElement && xml.name() != "display_formats") {
                 if (xml.name() == "column") {
                     int index = xml.attributes().value("index").toInt();
-                    settings.displayFormats[index] = xml.attributes().value("value").toString();
+                    settings.displayFormats[index] = xml.attributes().value("value").toString();    // RJM
+                    QString tfs = xml.attributes().value("sortByText").toString();  // RJM
+                    if (tfs.isEmpty())             // RJM
+                        settings.displayFormatsSortByText[index] = true; // RJM
+                    else // RJM
+                        settings.displayFormatsSortByText[index] = QVariant(tfs).toBool();  // RJM
                     xml.skipCurrentElement();
                 }
             }
@@ -2696,6 +2701,8 @@ static void saveBrowseDataTableSettings(const BrowseDataTableSettings& object, Q
         xml.writeStartElement("column");
         xml.writeAttribute("index", QString::number(iter.key()));
         xml.writeAttribute("value", iter.value());
+        // RJM
+        xml.writeAttribute("sortByText", QVariant(object.displayFormatsSortByText[iter.key()]).toString());  // RJM
         xml.writeEndElement();
     }
     xml.writeEndElement();

@@ -20,10 +20,12 @@ class ColumnDisplayFormatDialog : public QDialog
     Q_OBJECT
 
 public:
-    explicit ColumnDisplayFormatDialog(DBBrowserDB& db, const sqlb::ObjectIdentifier& tableName, const QString& colname, const QString& current_format, QWidget* parent = nullptr);
+    explicit ColumnDisplayFormatDialog(DBBrowserDB& db, const sqlb::ObjectIdentifier& tableName,
+                                       const QString& colname, const QString& current_format, const bool sortByText, QWidget* parent = nullptr);
     ~ColumnDisplayFormatDialog() override;
 
     QString selectedDisplayFormat() const;
+    bool    selectedDisplayFormatSortByText() const;  // RJM
 
 private slots:
     void updateSqlCode();

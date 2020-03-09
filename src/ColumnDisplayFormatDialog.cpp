@@ -5,7 +5,8 @@
 #include "sql/sqlitetypes.h"
 #include "sqlitedb.h"
 
-ColumnDisplayFormatDialog::ColumnDisplayFormatDialog(DBBrowserDB& db, const sqlb::ObjectIdentifier& tableName, const QString& colname, const QString& current_format, QWidget* parent)
+ColumnDisplayFormatDialog::ColumnDisplayFormatDialog(DBBrowserDB& db, const sqlb::ObjectIdentifier& tableName,
+                                                     const QString& colname, const QString& current_format, const bool sortByText, QWidget* parent)
     : QDialog(parent),
       ui(new Ui::ColumnDisplayFormatDialog),
       column_name(colname),
@@ -59,6 +60,7 @@ ColumnDisplayFormatDialog::ColumnDisplayFormatDialog(DBBrowserDB& db, const sqlb
     if(current_format.isEmpty())
     {
         ui->comboDisplayFormat->setCurrentIndex(0);
+        ui->sortByTextCB->setChecked(true); // RJM
         updateSqlCode();
     } else {
         // When it doesn't match any predefined format, it is considered custom
@@ -70,6 +72,7 @@ ColumnDisplayFormatDialog::ColumnDisplayFormatDialog(DBBrowserDB& db, const sqlb
             formatName = QString::fromStdString(it->first);
         ui->comboDisplayFormat->setCurrentIndex(ui->comboDisplayFormat->findData(formatName));
         ui->editDisplayFormat->setText(current_format);
+        ui->sortByTextCB->setChecked(sortByText); // RJM
     }
 }
 
@@ -84,6 +87,11 @@ QString ColumnDisplayFormatDialog::selectedDisplayFormat() const
         return QString();
     else
         return ui->editDisplayFormat->text();
+}
+
+bool ColumnDisplayFormatDialog::selectedDisplayFormatSortByText() const  // RJM
+{
+    return ui->sortByTextCB->isChecked();
 }
 
 void ColumnDisplayFormatDialog::updateSqlCode()
